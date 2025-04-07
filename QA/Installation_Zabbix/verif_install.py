@@ -1,12 +1,32 @@
 from selenium import webdriver
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import time
 import os
+
+# Définir le chemin complet vers GeckoDriver (Firefox)
+gecko_driver_path = "/usr/local/bin/geckodriver"  # Chemin valide pour Fedora
+
+# Vérifier que GeckoDriver existe
+if not os.path.exists(gecko_driver_path):
+    raise FileNotFoundError(f"GeckoDriver introuvable à : {gecko_driver_path}")
+
+# Options pour Firefox (ajout des options nécessaires)
+firefox_options = Options()
+firefox_options.add_argument('--headless')  # Exécuter Firefox en mode headless (sans interface graphique)
+
+# Créer le service pour GeckoDriver
+service = Service(gecko_driver_path)
+
+# Initialiser le WebDriver (ici Firefox)
+try:
+    driver = webdriver.Firefox(service=service, options=firefox_options)
+except Exception as e:
+    print(f"Erreur d'initialisation de GeckoDriver : {e}")
+    exit()
 
 # Variables pour suivre l'état du test
 test_passed = False
