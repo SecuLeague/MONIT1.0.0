@@ -4,31 +4,27 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 import time
 import os
 
-# Définir le chemin complet vers GeckoDriver (Firefox)
-gecko_driver_path = "/usr/local/bin/geckodriver"  # Chemin valide pour Fedora
+# Définir le chemin complet vers GeckoDriver
+gecko_driver_path = "/usr/local/bin/geckodriver"
 
-# Vérifier que GeckoDriver existe
+# Vérifier l'existence de GeckoDriver
 if not os.path.exists(gecko_driver_path):
     raise FileNotFoundError(f"GeckoDriver introuvable à : {gecko_driver_path}")
 
-# Options pour Firefox (ajout des options nécessaires)
+# Options pour Firefox
 firefox_options = Options()
-firefox_options.add_argument('--headless')  # Exécuter Firefox en mode headless (sans interface graphique)
+firefox_options.add_argument('--headless')
+firefox_options.add_argument('--no-sandbox')
+firefox_options.add_argument('--disable-dev-shm-usage')
 
-# Créer le service pour GeckoDriver
-service = Service(gecko_driver_path)
+# Créer le service pour Firefox
+service = Service(executable_path=gecko_driver_path)
 
-# Initialiser le WebDriver (ici Firefox)
-try:
-    driver = webdriver.Firefox(service=service, options=firefox_options)
-except Exception as e:
-    print(f"Erreur d'initialisation de GeckoDriver : {e}")
-    exit()
-
-# Variables pour suivre l'état du test
+# Variables de suivi du test
 test_passed = False
 page_access_success = False
 login_success = False
@@ -36,102 +32,63 @@ dashboard_success = False
 screenshot_login_success = False
 screenshot_dashboard_success = False
 
-# Définir le chemin du chromedriver
-chrome_driver_path = r"C:\Users\walid\Desktop\chromedriver-win64\chromedriver.exe"
-# Options pour le navigateur
-chrome_options = Options()
-chrome_options.add_argument('--ignore-certificate-errors')
-chrome_options.add_argument('--incognito')
-
-# Créer le service pour ChromeDriver
-service = Service(chrome_driver_path)
-
-# Initialiser le WebDriver
-driver = webdriver.Chrome(service=service, options=chrome_options)
-
 try:
-    # URL de l'interface Web de Zabbix
-    url = "https://192.168.150.15/"
+    # Initialiser le navigateur Firefox
+    driver = webdriver.Firefox(service=service, options=firefox_options)
+    
     # Accéder à l'interface Zabbix
+    url = "https://192.168.150.15/"
     driver.get(url)
     
-    # Vérifier que la page de connexion de Zabbix est visible
+    # Vérification de la page de connexion
     try:
-        # Attendre que le titre de la page de connexion soit présent
         WebDriverWait(driver, 10).until(EC.title_contains("Zabbix"))
-        print("Page de connexion de Zabbix est accessible.")
+        print("Page de connexion accessible.")
         page_access_success = True
         
         # Capture d'écran de la page de connexion
-        screenshot_path = r"C:\Users\walid\Desktop\zabbix_login.png"
-        result = driver.save_screenshot(screenshot_path)
-        
-        if result and os.path.exists(screenshot_path):
-            screenshot_login_success = True
-            print(f"Capture d'écran de la page de connexion enregistrée à {screenshot_path}.")
-        else:
-            print("Échec de la capture d'écran de la page de connexion.")
+        screenshot_path = "/home/walid/Desktop/zabbix_login.png"
+        driver.save_screenshot(screenshot_path)
+        screenshot_login_success = os.path.exists(screenshot_path)
         
     except Exception as e:
-        print(f"Erreur d'accès à la page de connexion Zabbix : {e}")
+        print(f"Erreur page de connexion : {str(e)}")
 
-    # Essayer de se connecter
+    # Connexion
     try:
-        # Localiser les champs de connexion
-        username_input = driver.find_element(By.ID, "name")
-        password_input = driver.find_element(By.ID, "password")
+        driver.find_element(By.ID, "name").send_keys("Admin")
+        driver.find_element(By.ID, "password").send_keys("zabbix" + Keys.RETURN)
         
-        # Entrer les identifiants
-        username_input.send_keys("Admin")
-        password_input.send_keys("zabbix")
-        password_input.send_keys(Keys.RETURN)  # Soumettre le formulaire
-        
-        # Attendre la page d'accueil du tableau de bord
-        dashboard_element = WebDriverWait(driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".dashboard-grid, .dashboard-element, .zi-dashboards"))
+        # Vérification connexion réussie
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".dashboard-grid"))
         )
+        login_success = True
         
-        if dashboard_element:
-            login_success = True
-            dashboard_success = True
-            print("Connexion réussie et tableau de bord affiché.")
-            
-            # Capture d'écran de la page d'accueil du tableau de bord
-            screenshot_path_dashboard = r"C:\Users\walid\Desktop\screenshot_zabbix_dashboard.png"
-            result_dashboard = driver.save_screenshot(screenshot_path_dashboard)
-            
-            if result_dashboard and os.path.exists(screenshot_path_dashboard):
-                screenshot_dashboard_success = True
-                print(f"Capture d'écran du tableau de bord enregistrée à {screenshot_path_dashboard}.")
-            else:
-                print("Échec de la capture d'écran du tableau de bord.")
+        # Capture d'écran du dashboard
+        screenshot_path = "/home/walid/Desktop/zabbix_dashboard.png"
+        driver.save_screenshot(screenshot_path)
+        screenshot_dashboard_success = os.path.exists(screenshot_path)
         
     except Exception as e:
-        print(f"Erreur lors de la connexion à Zabbix ou affichage du tableau de bord : {e}")
+        print(f"Erreur de connexion : {str(e)}")
 
-    # Déterminer si le test est globalement réussi
-    test_passed = page_access_success and login_success and dashboard_success and (screenshot_login_success or screenshot_dashboard_success)
-
-except Exception as e:
-    print(f"Erreur critique pendant l'exécution du test : {e}")
+    # Déterminer le succès global
+    test_passed = all([
+        page_access_success,
+        login_success,
+        screenshot_login_success,
+        screenshot_dashboard_success
+    ])
 
 finally:
-    # Afficher le résultat du test
-    if test_passed:
-        print("\n=== TEST PASSED! ===")
-        print("✅ Accès à la page de connexion : Réussi")
-        print("✅ Connexion à Zabbix : Réussie")
-        print("✅ Affichage du tableau de bord : Réussi")
-        print(f"✅ Capture d'écran de la page de connexion : {'Réussie' if screenshot_login_success else 'Échouée'}")
-        print(f"✅ Capture d'écran du tableau de bord : {'Réussie' if screenshot_dashboard_success else 'Échouée'}")
-    else:
-        print("\n=== TEST FAILED! ===")
-        print(f"❌ Accès à la page de connexion : {'Réussi' if page_access_success else 'Échoué'}")
-        print(f"❌ Connexion à Zabbix : {'Réussie' if login_success else 'Échouée'}")
-        print(f"❌ Affichage du tableau de bord : {'Réussi' if dashboard_success else 'Échoué'}")
-        print(f"❌ Capture d'écran de la page de connexion : {'Réussie' if screenshot_login_success else 'Échouée'}")
-        print(f"❌ Capture d'écran du tableau de bord : {'Réussie' if screenshot_dashboard_success else 'Échouée'}")
-    
-    # Fermer le navigateur après l'exécution
+    # Générer le rapport
+    print("\n=== RAPPORT FINAL ===")
+    print(f"Accès page login : {'✅' if page_access_success else '❌'}")
+    print(f"Connexion réussie : {'✅' if login_success else '❌'}")
+    print(f"Capture login : {'✅' if screenshot_login_success else '❌'}")
+    print(f"Capture dashboard : {'✅' if screenshot_dashboard_success else '❌'}")
+    print(f"\nRésultat global : {'SUCCÈS ✅' if test_passed else 'ÉCHEC ❌'}")
+
+    # Fermeture du navigateur
     driver.quit()
-    print("Navigateur fermé.")
