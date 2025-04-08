@@ -147,6 +147,7 @@ try:
             
             # Attendre que l'élément soit cliquable et effectuer le clic avec JavaScript
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[data-hostid='{host['hostid']}'][onclick='view.editHost(event, this.dataset.hostid);']")))
+
             driver.execute_script("arguments[0].click();", host_css_selector)
             
             print(f"Clic sur '{host['name']}' effectué avec succès via JavaScript.")
@@ -163,7 +164,6 @@ try:
                 screenshot_success[host["name"]] = False
             
             time.sleep(2)  # Attente pour observer les changements après le clic
-            
         except Exception as e:
             host_click_success[host["name"]] = False
             screenshot_success[host["name"]] = False
@@ -184,16 +184,16 @@ finally:
         
         for host in hosts_to_click:
             name = host["name"]
-            print(f"✅ Clic sur '{name}' : {'Réussi' if host_click_success[name] else 'Échoué'}")
-            print(f"✅ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success[name] else 'Échouée'}")
+            print(f"✅ Clic sur '{name}' : {'Réussi' if host_click_success.get(name, False) else 'Échoué'}")
+            print(f"✅ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success.get(name, False) else 'Échouée'}")
     
     else:
         print("\n=== TEST FAILED! ===")
         
         for host in hosts_to_click:
             name = host["name"]
-            print(f"❌ Clic sur '{name}' : {'Réussi' if host_click_success[name] else 'Échoué'}")
-            print(f"❌ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success[name] else 'Échouée'}")
+            print(f"❌ Clic sur '{name}' : {'Réussi' if host_click_success.get(name, False) else 'Échoué'}")
+            print(f"❌ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success.get(name, False) else 'Échouée'}")
     
     # Fermer le navigateur après toutes les étapes
     driver.quit()
