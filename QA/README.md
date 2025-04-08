@@ -48,4 +48,7 @@ Exécution d'un script python avec Ansible :
 
 **** Script global pour exécuter tous les tests ****
 
-├──Integration_CICD  │ └── rapport_de_test.py La deuxième phase des tests automatisés consiste à préparer un script python global qui prend en compte tous les sous-scripts de chaque sous-cas de test, les exécute ensemble, et génère un rapport de test complet.
+├──Integration_CICD  │ 
+
+└── rapport_de_test.py 
+La deuxième phase des tests automatisés consiste à préparer un script python global qui prend en compte tous les sous-scripts de chaque sous-cas de test, les exécute ensemble, et génère un rapport de test complet.
