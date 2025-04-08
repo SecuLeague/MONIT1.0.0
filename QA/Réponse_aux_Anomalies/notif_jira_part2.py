@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains  # Import nécessaire pour les actions
 import time
 import os
 
@@ -126,7 +127,7 @@ try:
 
     # Capture d'écran après le clic sur "1 action"
     try:
-        screenshot_path = r"C:\Users\walid\Desktop\screenshot_after_action_click.png"
+        screenshot_path = "/home/walid/Desktop/screenshot_after_action_click.png"
         driver.save_screenshot(screenshot_path)
         
         if os.path.exists(screenshot_path):
