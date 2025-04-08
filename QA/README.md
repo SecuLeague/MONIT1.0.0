@@ -16,14 +16,20 @@ QA_MONIT_1.0.0/
             ├──verif_gestion_user.py
            
 ├── Installation des tools DevOps
+
          ├── verif_config.py
         ├── verif_install.py
+        
 ├── Intégration_DEV
+
          ├── Intégration proxmox.py
         ├── integre_VMs.py
+        
 ├── Réponse_aux_Anomalies
+
          ├── verif_jira_part1.py
         ├── verif_jira_part2.py
+        
 **** Explication de chaque cas de test & sous cas de test ***
 
        "Installation_Zabbix": "Vérifie l'installation et le fonctionnement de Zabbix."
