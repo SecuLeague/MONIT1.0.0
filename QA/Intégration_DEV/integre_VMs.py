@@ -77,7 +77,7 @@ try:
         login_button.click()
         print("Clic sur le bouton Login effectué.")
         time.sleep(5)
-        
+
         # Vérifier si la connexion a réussi en cherchant un élément du menu principal
         try:
             dashboard_element = wait_for_element(By.CSS_SELECTOR, ".zi-dashboards", timeout=10)
@@ -107,7 +107,7 @@ try:
             hosts_css.click()
             print("Clic sur 'Hosts' effectué avec succès via CSS Selector.")
             time.sleep(2)
-            
+
             # Vérifier si la navigation vers Hosts a réussi
             hosts_header = wait_for_element(By.TAG_NAME, "h1", timeout=10)
             if hosts_header and "Hosts" in hosts_header.text:
@@ -141,29 +141,29 @@ try:
     for host in hosts_to_click:
         try:
             host_css_selector = driver.find_element(By.CSS_SELECTOR, f"a[data-hostid='{host['hostid']}'][onclick='view.editHost(event, this.dataset.hostid);']")
-            
+
             # Scrolling de l'élément dans la vue
             driver.execute_script("arguments[0].scrollIntoView(true);", host_css_selector)
-            
+
             # Attendre que l'élément soit cliquable et effectuer le clic avec JavaScript
             WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.CSS_SELECTOR, f"a[data-hostid='{host['hostid']}'][onclick='view.editHost(event, this.dataset.hostid);']")))
             driver.execute_script("arguments[0].click();", host_css_selector)
-            
+
             print(f"Clic sur '{host['name']}' effectué avec succès via JavaScript.")
-            
+
             # Capture d'écran après le clic
             screenshot_path = f"C:\\Users\\walid\\Desktop\\{host['name']}_apres_clic.png"
             result = driver.save_screenshot(screenshot_path)
-            
+
             if result and os.path.exists(screenshot_path):
                 screenshot_success[host["name"]] = True
                 host_click_success[host["name"]] = True
                 print(f"Capture d'écran enregistrée sous : {screenshot_path}")
             else:
                 screenshot_success[host["name"]] = False
-            
+
             time.sleep(2)  # Attente pour observer les changements après le clic
-            
+
         except Exception as e:
             host_click_success[host["name"]] = False
             screenshot_success[host["name"]] = False
@@ -175,26 +175,27 @@ except Exception as e:
 finally:
     # Afficher le résultat du test globalement et par hôte
     test_passed = login_success and data_collection_success and hosts_navigation_success and all(host_click_success.values()) and all(screenshot_success.values())
-    
+
     if test_passed:
         print("\n=== TEST PASSED! ===")
         print("✅ Connexion : Réussie")
         print("✅ Navigation vers Data collection : Réussie")
         print("✅ Navigation vers Hosts : Réussie")
-        
+
         for host in hosts_to_click:
             name = host["name"]
             print(f"✅ Clic sur '{name}' : {'Réussi' if host_click_success[name] else 'Échoué'}")
             print(f"✅ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success[name] else 'Échouée'}")
-    
+
     else:
         print("\n=== TEST FAILED! ===")
-        
+
         for host in hosts_to_click:
             name = host["name"]
             print(f"❌ Clic sur '{name}' : {'Réussi' if host_click_success[name] else 'Échoué'}")
             print(f"❌ Capture d'écran pour '{name}' : {'Réussie' if screenshot_success[name] else 'Échouée'}")
-    
+
     # Fermer le navigateur après toutes les étapes
     driver.quit()
     print("Navigateur fermé.")
+
