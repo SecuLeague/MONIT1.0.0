@@ -5,14 +5,16 @@ Les scripts sont organisés en fonction du nom des cas de test, et chaque cas de
 L'arborescence ci-dessous explique brièvement la structure globale.
 
 QA_MONIT_1.0.0/
+
 ├── Analyse_des_données
 
             ├── extract_données.py
             ├──  test_performence.py
-           ├── test_visualisation.py
-           ├── verif_connectivite_user.py
-           ├──verif_documentation.py
-           ├──  verif_gestion_user.py
+            ├── test_visualisation.py
+            ├── verif_connectivite_user.py
+            ├──verif_documentation.py
+            ├──verif_gestion_user.py
+           
 ├── Installation des tools DevOps
          ├── verif_config.py
         ├── verif_install.py
