@@ -3,6 +3,7 @@ import time
 import os
 from datetime import datetime
 from tabulate import tabulate
+from git import Repo  # Utilisation de la bibliothèque GitPython pour cloner le dépôt
 
 def collect_test_results(test_case_id, test_description, test_result, execution_time, error_message=None, test_case_global=None, sub_test_case=None):
     """
@@ -34,8 +35,20 @@ def get_test_description(test_case_global):
         "Intégration_DEV": "Teste l'intégration des nouvelles fonctionnalités.",
         "Réponse_aux_Anomalies": "Valide la gestion et notification des anomalies.",
         "Analyse_des_données": "S'assure de la précision et l'affichage des données."
+        
     }
     return descriptions.get(test_case_global, "Description non définie pour ce cas de test.")
+
+def clone_repo(github_url, clone_path):
+    """
+    Clone le dépôt GitHub si ce n'est pas déjà fait.
+    """
+    if not os.path.exists(clone_path):
+        print(f"Clonage du dépôt depuis {github_url} vers {clone_path}...")
+        Repo.clone_from(github_url, clone_path)
+        print("Dépôt cloné avec succès.")
+    else:
+        print(f"Le dépôt existe déjà à {clone_path}.")
 
 def list_and_execute_files(repo_path):
     """
@@ -63,17 +76,18 @@ def list_and_execute_files(repo_path):
         for f in files:
             print(f"{subindent}{f}")
 
-    # Exécuter les fichiers Python
-    print("\nExécution des fichiers Python :")
-    for root, _, files in os.walk(repo_path):
-        for file in files:
-            if file.endswith('.py'):
-                full_path = os.path.join(root, file)
+    # Exécuter le fichier Python dans le répertoire 'Integration_CI-CD'
+    print("\nExécution des fichiers Python dans 'Integration_CI-CD' :")
+    integration_cicd_path = os.path.join(repo_path, 'Integration_CI-CD')
 
-                # Identifier le cas de test global (nom du dossier) et le sous-cas de test (nom du fichier)
-                test_case_global = os.path.basename(root)
+    # Vérifier si le répertoire existe et exécuter les fichiers Python dans ce répertoire
+    if os.path.exists(integration_cicd_path):
+        for file in os.listdir(integration_cicd_path):
+            if file.endswith('.py'):
+                full_path = os.path.join(integration_cicd_path, file)
+                test_case_global = 'Integration_CI-CD'  # Cas de test global
                 sub_test_case = os.path.splitext(file)[0]
-                test_description = get_test_description(test_case_global)  # Obtenir la description du cas de test global
+                test_description = get_test_description(test_case_global)
 
                 # Créer un identifiant unique pour le cas de test
                 test_case_id = f"TST_MONIT{test_case_id_counter}"
@@ -84,7 +98,76 @@ def list_and_execute_files(repo_path):
                 start_time = time.time()  # Enregistrer le temps de début
 
                 try:
-                    # Simulation de l'exécution du test. Remplacez cela par l'exécution réelle si nécessaire.
+                    # Exécution du fichier Python
+                    subprocess.run(["python3", full_path], check=True)
+
+                    end_time = time.time()  # Enregistrer le temps de fin
+                    execution_time = round(end_time - start_time, 2)
+
+                    # Collecter les résultats du test avec succès
+                    test_results.append(
+                        collect_test_results(
+                            test_case_id=test_case_id,
+                            test_case_global=test_case_global,
+                            sub_test_case=sub_test_case,
+                            test_description=test_description,
+                            test_result="Passed",
+                            execution_time=execution_time
+                        )
+                    )
+                except subprocess.CalledProcessError as e:
+                    end_time = time.time()  # Enregistrer le temps de fin
+                    execution_time = round(end_time - start_time, 2)
+
+                    # Collecter les résultats du test avec échec
+                    test_results.append(
+                        collect_test_results(
+                            test_case_id=test_case_id,
+                            test_case_global=test_case_global,
+                            sub_test_case=sub_test_case,
+                            test_description=test_description,
+                            test_result="Failed",
+                            execution_time=execution_time,
+                            error_message=str(e)
+                        )
+                    )
+                except Exception as e:
+                    end_time = time.time()  # Enregistrer le temps de fin
+                    execution_time = round(end_time - start_time, 2)
+
+                    # Collecter les résultats du test avec erreur inattendue
+                    test_results.append(
+                        collect_test_results(
+                            test_case_id=test_case_id,
+                            test_case_global=test_case_global,
+                            sub_test_case=sub_test_case,
+                            test_description=test_description,
+                            test_result="Failed",
+                            execution_time=execution_time,
+                            error_message=f"Erreur inattendue : {e}"
+                        )
+                    )
+
+    # Exécuter les autres fichiers Python dans les répertoires restants
+    print("\nExécution des autres fichiers Python dans le dépôt :")
+    for root, _, files in os.walk(repo_path):
+        for file in files:
+            if file.endswith('.py') and "Integration_CI-CD" not in root:
+                full_path = os.path.join(root, file)
+                test_case_global = os.path.basename(root)
+                sub_test_case = os.path.splitext(file)[0]
+                test_description = get_test_description(test_case_global)
+
+                # Créer un identifiant unique pour le cas de test
+                test_case_id = f"TST_MONIT{test_case_id_counter}"
+                test_case_id_counter += 1
+
+                print(f"\n{'='*50}\nExécution de : {full_path}\n{'='*50}")
+
+                start_time = time.time()  # Enregistrer le temps de début
+
+                try:
+                    # Exécution du fichier Python
                     subprocess.run(["python3", full_path], check=True)
 
                     end_time = time.time()  # Enregistrer le temps de fin
@@ -142,17 +225,13 @@ def list_and_execute_files(repo_path):
         print(tabulate(test_results, headers=headers, tablefmt="pretty"))
 
 if __name__ == "__main__":
-    # Chemin vers le dépôt existant
-    repo_path = "./MONIT1.0.0"
+    # URL du dépôt GitHub
+    github_url = "https://github.com/SecuLeague/MONIT1.0.0.git"
+    # Chemin vers le répertoire local où cloner le dépôt
+    clone_path = "./MONIT1.0.0"
 
-    # Vérifier si le dépôt existe
-    if os.path.exists(repo_path):
-        list_and_execute_files(repo_path)
-    else:
-        print(f"Le dépôt '{repo_path}' n'existe pas.")
+    # Cloner le dépôt s'il n'est pas encore cloné
+    clone_repo(github_url, clone_path)
 
-
-
-
-
-
+    # Lancer l'exécution des fichiers dans le dépôt cloné
+    list_and_execute_files(clone_path)
