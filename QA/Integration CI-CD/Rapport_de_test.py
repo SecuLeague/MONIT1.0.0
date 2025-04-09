@@ -1,9 +1,9 @@
+import subprocess
 import time
 import os
 from datetime import datetime
 from tabulate import tabulate
-from git import Repo  # Utilisation de la bibliothèque GitPython pour cloner le dépôt
-
+from git import Repo 
 def collect_test_results(test_case_id, test_description, test_result, execution_time, error_message=None, test_case_global=None, sub_test_case=None):
     """
     Collecte les résultats du test dans une liste pour un affichage sous forme de tableau.
