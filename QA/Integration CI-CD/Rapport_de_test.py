@@ -1,4 +1,3 @@
-import subprocess
 import time
 import os
 from datetime import datetime
@@ -35,7 +34,7 @@ def get_test_description(test_case_global):
         "Intégration_DEV": "Teste l'intégration des nouvelles fonctionnalités.",
         "Réponse_aux_Anomalies": "Valide la gestion et notification des anomalies.",
         "Analyse_des_données": "S'assure de la précision et l'affichage des données."
-        
+        # La ligne "Integration_CI-CD" a été supprimée
     }
     return descriptions.get(test_case_global, "Description non définie pour ce cas de test.")
 
@@ -76,15 +75,28 @@ def list_and_execute_files(repo_path):
         for f in files:
             print(f"{subindent}{f}")
 
+    # Vérifier si le fichier Rapport_de_test.py a déjà été exécuté
+    rapport_de_test_executed = False
+
     # Exécuter le fichier Python dans le répertoire 'Integration_CI-CD'
     print("\nExécution des fichiers Python dans 'Integration_CI-CD' :")
-    integration_cicd_path = os.path.join(repo_path, 'Integration_CI-CD')
+    integration_cicd_path = os.path.join(repo_path, 'QA', 'Integration CI-CD')
 
     # Vérifier si le répertoire existe et exécuter les fichiers Python dans ce répertoire
     if os.path.exists(integration_cicd_path):
         for file in os.listdir(integration_cicd_path):
             if file.endswith('.py'):
                 full_path = os.path.join(integration_cicd_path, file)
+
+                # Ignorer si le fichier est Rapport_de_test.py et qu'il a déjà été exécuté
+                if file == "Rapport_de_test.py" and rapport_de_test_executed:
+                    print(f"Le fichier {file} a déjà été exécuté, il est ignoré.")
+                    continue
+
+                # Si c'est Rapport_de_test.py, marquer comme exécuté
+                if file == "Rapport_de_test.py":
+                    rapport_de_test_executed = True
+
                 test_case_global = 'Integration_CI-CD'  # Cas de test global
                 sub_test_case = os.path.splitext(file)[0]
                 test_description = get_test_description(test_case_global)
@@ -235,3 +247,14 @@ if __name__ == "__main__":
 
     # Lancer l'exécution des fichiers dans le dépôt cloné
     list_and_execute_files(clone_path)
+
+
+
+
+
+
+
+
+
+
+
