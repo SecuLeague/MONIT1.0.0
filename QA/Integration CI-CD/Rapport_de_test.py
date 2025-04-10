@@ -34,7 +34,6 @@ def get_test_description(test_case_global):
         "Intégration_DEV": "Teste l'intégration des nouvelles fonctionnalités.",
         "Réponse_aux_Anomalies": "Valide la gestion et notification des anomalies.",
         "Analyse_des_données": "S'assure de la précision et l'affichage des données."
-        # La ligne "Integration_CI-CD" a été supprimée
     }
     return descriptions.get(test_case_global, "Description non définie pour ce cas de test.")
 
