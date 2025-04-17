@@ -36,7 +36,8 @@ screenshot_success = False
 
 try:
     # Accéder au site
-    url = "https://192.168.150.15/"
+    #url = "https://192.168.150.15/"
+    url = "https://monit-02-prj.seculeague.link/zabbix"
     driver.get(url)
 
     # Redimensionner la fenêtre du navigateur
