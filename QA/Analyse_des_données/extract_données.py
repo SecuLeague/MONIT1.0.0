@@ -36,8 +36,8 @@ screenshot_success = False
 
 try:
     # Accéder au site
-    url = "https://192.168.150.15/"
-    #url = "http://192.168.10.193/zabbix/"
+    #url = "https://192.168.150.15/"
+    url = "http://192.168.10.193/zabbix/"
     driver.get(url)
 
     # Redimensionner la fenêtre du navigateur
