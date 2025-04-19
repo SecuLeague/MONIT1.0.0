@@ -4,151 +4,128 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import time
 import os
+import time
 
-# Définir le chemin complet vers GeckoDriver (Firefox)
-gecko_driver_path = "/usr/local/bin/geckodriver"  # Chemin valide pour Fedora
+GECKO_DRIVER_PATH = "/usr/local/bin/geckodriver"
+SCREENSHOT_PATH = r"C:\Users\walid\Desktop\latest_data.png"
+ZABBIX_URL = "http://192.168.10.193/zabbix/"
 
-# Vérifier que GeckoDriver existe
-if not os.path.exists(gecko_driver_path):
-    raise FileNotFoundError(f"GeckoDriver introuvable à : {gecko_driver_path}")
 
-# Options pour Firefox (ajout des options nécessaires)
-firefox_options = Options()
-firefox_options.add_argument('--headless')  # Exécuter Firefox en mode headless (sans interface graphique)
+def setup_driver():
+    if not os.path.exists(GECKO_DRIVER_PATH):
+        raise FileNotFoundError(f"GeckoDriver introuvable à : {GECKO_DRIVER_PATH}")
+    options = Options()
+    options.add_argument('--headless')
+    service = Service(GECKO_DRIVER_PATH)
+    return webdriver.Firefox(service=service, options=options)
 
-# Créer le service pour GeckoDriver
-service = Service(gecko_driver_path)
 
-# Initialiser le WebDriver (ici Firefox)
-try:
-    driver = webdriver.Firefox(service=service, options=firefox_options)
-except Exception as e:
-    print(f"Erreur d'initialisation de GeckoDriver : {e}")
-    exit()
-# Variables pour suivre l'état du test
-test_passed = False
-login_success = False
-navigation_to_monitoring = False
-navigation_to_latest_data = False
-screenshot_success = False
+def wait_for_element(driver, selector_type, selector_value, timeout=30):
+    try:
+        return WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((selector_type, selector_value))
+        )
+    except Exception as e:
+        print(f"Erreur lors de l'attente de l'élément {selector_value}: {e}")
+        return None
 
-try:
-    # Accéder au site
-    #url = "https://192.168.150.15/"
-    url = "http://192.168.10.193/zabbix/"
-    driver.get(url)
 
-    # Redimensionner la fenêtre du navigateur
+def login(driver):
+    driver.get(ZABBIX_URL)
     driver.set_window_size(1024, 768)
     driver.set_window_position(0, 0)
     print("Fenêtre redimensionnée et déplacée.")
 
-    # Fonction d'attente explicite pour un élément
-    def wait_for_element(selector_type, selector_value, timeout=30):
-        try:
-            element = WebDriverWait(driver, timeout).until(
-                EC.presence_of_element_located((selector_type, selector_value))
-            )
-            return element
-        except Exception as e:
-            print(f"Erreur lors de l'attente de l'élément {selector_value}: {e}")
-            return None
+    username_input = wait_for_element(driver, By.CSS_SELECTOR, "input#name")
+    password_input = wait_for_element(driver, By.CSS_SELECTOR, "input#password")
+    login_button = wait_for_element(driver, By.ID, "enter")
 
-    # Remplir le champ "username"
-    username_input = wait_for_element(By.CSS_SELECTOR, "input#name", timeout=30)
-    if username_input:
+    if username_input and password_input and login_button:
         username_input.send_keys("Admin")
-        print("Username saisi.")
-        time.sleep(2)
-
-    # Attendre que le champ "password" soit visible et remplir
-    password_input = wait_for_element(By.CSS_SELECTOR, "input#password", timeout=30)
-    if password_input:
+        time.sleep(1)
         password_input.send_keys("zabbix")
-        print("Mot de passe saisi.")
-        time.sleep(2)
-
-    # Cliquer sur le bouton de login
-    login_button = wait_for_element(By.ID, "enter", timeout=30)
-    if login_button:
+        time.sleep(1)
         login_button.click()
-        print("Clic sur le bouton Login effectué.")
-        time.sleep(5)
-        
-        # Vérifier la connexion en cherchant un élément qui n'apparaît qu'après connexion
+        time.sleep(3)
+
         try:
             WebDriverWait(driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".zi-monitoring"))
             )
-            login_success = True
             print("Connexion réussie.")
+            return True
         except Exception as e:
             print(f"Échec de la connexion : {e}")
+    return False
 
-    # CSS Selector pour Monitoring
+
+def navigate_to_monitoring(driver):
     try:
-        monitoring_element_css = driver.find_element(By.CSS_SELECTOR, ".zi-monitoring")
-        monitoring_element_css.click()
-        print("Clic sur 'Monitoring' effectué avec CSS Selector.")
+        monitoring = driver.find_element(By.CSS_SELECTOR, ".zi-monitoring")
+        monitoring.click()
         time.sleep(2)
-        navigation_to_monitoring = True
+        print("Navigation vers 'Monitoring' réussie.")
+        return True
     except Exception as e:
-        print(f"Erreur lors du clic sur 'Monitoring' avec CSS Selector : {e}")
+        print(f"Erreur lors de la navigation vers 'Monitoring' : {e}")
+        return False
 
-    # 1. Localiser et cliquer sur l'élément 'Latest data'
+
+def navigate_to_latest_data(driver):
     try:
-        latest_data_element_css = driver.find_element(By.CSS_SELECTOR, "a[href='zabbix.php?action=latest.view']")
-        latest_data_element_css.click()
-        print("Clic sur 'Latest data' effectué avec CSS Selector.")
+        latest = driver.find_element(By.CSS_SELECTOR, "a[href='zabbix.php?action=latest.view']")
+        latest.click()
         time.sleep(2)
-        
-        # Vérifier que nous sommes sur la page "Latest data"
-        try:
-            WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, "//h1[contains(text(), 'Latest data') or contains(@class, 'latest-data-title')]"))
-            )
-            navigation_to_latest_data = True
-            print("Navigation vers 'Latest data' confirmée.")
-            
-            # Prendre une capture d'écran après avoir accédé à "Latest data"
-            screenshot_path = r"C:\Users\walid\Desktop\latest_data.png"
-            result = driver.save_screenshot(screenshot_path)
-            
-            if result and os.path.exists(screenshot_path):
-                screenshot_success = True
-                print(f"Capture d'écran effectuée et enregistrée à : {screenshot_path}")
-            else:
-                print(f"Échec de la capture d'écran.")
-            
-        except Exception as e:
-            print(f"Impossible de confirmer la navigation vers 'Latest data' : {e}")
-            
+
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.XPATH, "//h1[contains(text(), 'Latest data') or contains(@class, 'latest-data-title')]"))
+        )
+        print("Navigation vers 'Latest data' confirmée.")
+        return True
     except Exception as e:
-        print(f"Erreur lors du clic sur 'Latest data' avec CSS Selector : {e}")
+        print(f"Erreur lors de la navigation vers 'Latest data' : {e}")
+        return False
 
-    # Déterminer si le test est réussi
-    test_passed = login_success and navigation_to_monitoring and navigation_to_latest_data and screenshot_success
 
-except Exception as e:
-    print(f"Erreur critique lors de l'exécution du test : {e}")
+def capture_screenshot(driver, path):
+    result = driver.save_screenshot(path)
+    if result and os.path.exists(path):
+        print(f"Capture d'écran enregistrée à : {path}")
+        return True
+    print("Échec de la capture d'écran.")
+    return False
 
-finally:
-    # Afficher le résultat du test
-    if test_passed:
-        print("\n=== TEST PASSED! ===")
-        print("✅ Connexion : Réussie")
-        print("✅ Navigation vers Monitoring : Réussie")
-        print("✅ Navigation vers Latest data : Réussie")
-        print("✅ Capture d'écran : Réussie")
-    else:
-        print("\n=== TEST FAILED! ===")
-        print(f"❌ Connexion : {'Réussie' if login_success else 'Échouée'}")
-        print(f"❌ Navigation vers Monitoring : {'Réussie' if navigation_to_monitoring else 'Échouée'}")
-        print(f"❌ Navigation vers Latest data : {'Réussie' if navigation_to_latest_data else 'Échouée'}")
-        print(f"❌ Capture d'écran : {'Réussie' if screenshot_success else 'Échouée'}")
-    
-    # Fermer le navigateur
-    driver.quit()
-    print("Navigateur fermé.")
+
+def main():
+    test_passed = login_success = nav_monitoring = nav_latest = screenshot_ok = False
+
+    driver = setup_driver()
+
+    try:
+        login_success = login(driver)
+        if login_success:
+            nav_monitoring = navigate_to_monitoring(driver)
+            if nav_monitoring:
+                nav_latest = navigate_to_latest_data(driver)
+                if nav_latest:
+                    screenshot_ok = capture_screenshot(driver, SCREENSHOT_PATH)
+
+        test_passed = all([login_success, nav_monitoring, nav_latest, screenshot_ok])
+
+    except Exception as e:
+        print(f"Erreur critique : {e}")
+
+    finally:
+        driver.quit()
+        print("Navigateur fermé.")
+
+        print("\n=== TEST {} ===".format("PASSED ✅" if test_passed else "FAILED ❌"))
+        print(f"Connexion : {'✔️' if login_success else '❌'}")
+        print(f"Monitoring : {'✔️' if nav_monitoring else '❌'}")
+        print(f"Latest data : {'✔️' if nav_latest else '❌'}")
+        print(f"Capture : {'✔️' if screenshot_ok else '❌'}")
+
+
+if __name__ == "__main__":
+    main()
